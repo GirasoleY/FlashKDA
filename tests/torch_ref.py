@@ -178,9 +178,11 @@ def torch_ref(q, k, v, g, beta, scale, out, A_log, dt_bias, lower_bound, initial
     N = len(cu_seqlens) - 1
 
     if initial_state is not None:
-        work_state = initial_state.to(torch.bfloat16).clone()
+        # The kernel narrows an fp32 initial state to bf16 on load, then
+        # accumulates in fp32.
+        work_state = initial_state.to(torch.bfloat16).to(torch.float32)
     else:
-        work_state = torch.zeros(N, H, D, D, dtype=torch.bfloat16, device=device)
+        work_state = torch.zeros(N, H, D, D, dtype=torch.float32, device=device)
 
     for seq_idx in range(N):
         bos = cu_seqlens[seq_idx].item()
@@ -225,23 +227,26 @@ def torch_ref(q, k, v, g, beta, scale, out, A_log, dt_bias, lower_bound, initial
                 INV = inv_fwd_subst_16(L)
 
                 state_slice = work_state[seq_idx, h]
-                v_chunk = v_chunk - torch.matmul(k_decayed, state_slice.t())
+                state_bf16 = state_slice.to(torch.bfloat16)  # MMA operand
+                v_chunk = v_chunk - torch.matmul(k_decayed, state_bf16.t())
                 v_chunk = v_chunk * beta_val_bf16
 
                 U = torch.matmul(INV, v_chunk)
-                _out = torch.matmul(q_decayed, state_slice.t())
+                _out = torch.matmul(q_decayed, state_bf16.t())
                 _out = _out + torch.matmul(Mqk, U)
 
                 delta_s = torch.mm(k_restored.t(), U, out_dtype=torch.float32)
 
                 g_total_exp = fp32_ex2_ftz(g_total)
                 g_total_exp = g_total_exp.squeeze(0).unsqueeze(-1)
-                work_state[seq_idx, h] = fp32_fma(delta_s, state_slice.to(torch.float32).t(), g_total_exp).to(torch.bfloat16).t()
+                work_state[seq_idx, h] = fp32_fma(delta_s, state_slice.t(), g_total_exp).t()
 
                 out[t0:t0 + actual_len, h] = _out[:actual_len]
 
     if final_state is not None:
+        # The kernel stores the state through its bf16 shared-memory tile.
+        final_bf16 = work_state.to(torch.bfloat16)
         if state_fp32:
-            final_state.copy_(work_state.to(torch.float32))
+            final_state.copy_(final_bf16.to(torch.float32))
         else:
-            final_state.copy_(work_state)
+            final_state.copy_(final_bf16)

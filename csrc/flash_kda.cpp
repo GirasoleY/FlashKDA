@@ -205,7 +205,6 @@ void fwd(
         attr_status == cudaSuccess,
         "failed to query CUDA multiprocessor count: ",
         cudaGetErrorString(attr_status));
-    bool use_vsplit = 2 * H * N_val <= num_sms;
 
     // Validate state shapes: always [N, H, D, D]
     if (has_state_in) {
@@ -255,7 +254,7 @@ void fwd(
                 checkpoint_state_raw, typed_checkpoint_offsets, out_ptr, \
                 workspace_ptr, total_tiles, \
                 int(T_total), int(H), int(N_val), typed_cu_seqlens, \
-                A_log_ptr, dt_bias_ptr, gate_scale, use_vsplit, stream)
+                A_log_ptr, dt_bias_ptr, gate_scale, num_sms, stream)
 
         #define DISPATCH_STATE(CKPT, VL) \
             if (!has_state_in && !has_state_out && state_fp32) { \

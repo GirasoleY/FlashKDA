@@ -32,6 +32,6 @@ void launch_fwd(
     float const* A_log_ptr,
     float const* dt_bias_ptr,
     float gate_scale,
-    bool use_vsplit,
+    int num_sms,
     cudaStream_t stream
 );
