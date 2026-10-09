@@ -417,10 +417,12 @@ void launch_recurrence(
     INSTANTIATE_CHECKPOINT_VARIANTS(false, true,  true,  VL, SEQLEN_T) \
     INSTANTIATE_CHECKPOINT_VARIANTS(true,  false, true,  VL, SEQLEN_T)
 
+// launch_fwd and launch_recurrence
 INSTANTIATE_STATE_VARIANTS(true, int32_t)
 INSTANTIATE_STATE_VARIANTS(true, int64_t)
 INSTANTIATE_STATE_VARIANTS(false, int32_t)
 INSTANTIATE_STATE_VARIANTS(false, int64_t)
+// launch_prepare has no state or checkpoint parameters
 INSTANTIATE_LAUNCH_PREPARE(true, int32_t)
 INSTANTIATE_LAUNCH_PREPARE(true, int64_t)
 INSTANTIATE_LAUNCH_PREPARE(false, int32_t)
