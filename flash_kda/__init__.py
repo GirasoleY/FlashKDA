@@ -22,7 +22,6 @@ def fwd(
     final_state=None,
     cu_seqlens=None,
     workspace=None,
-    segment_ids=None,
 ):
     """FlashKDA forward (Flash Kimi Delta Attention).
 
@@ -48,9 +47,6 @@ def fwd(
             or int64, shape ``[N+1]``. When provided, ``B`` must be 1.
         workspace (torch.Tensor, optional): Reusable uint8 workspace. Allocated
             automatically when omitted.
-        segment_ids (torch.Tensor, optional): int32 indices of the varlen
-            sequences to run the recurrence for; the others' ``out`` rows and
-            states are left untouched. ``None`` runs every sequence.
     Notes:
         * Currently requires ``K = V = 128``.
         * Beta may be strided; other input and output tensors must be
@@ -80,5 +76,4 @@ def fwd(
         initial_state=initial_state,
         final_state=final_state,
         cu_seqlens=cu_seqlens,
-        segment_ids=segment_ids,
     )
