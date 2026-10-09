@@ -36,10 +36,11 @@ void launch_fwd(
     cudaStream_t stream
 );
 
-// The two kernels of launch_fwd as standalone launches. launch_prepare (K1)
-// fills ``workspace`` from q, k, g and beta; launch_recurrence (K2) reads
-// that workspace with v and beta and writes ``out`` and the states. Both
-// must use the same geometry (total_tiles, T_total, H, N, cu_seqlens).
+// The two kernels of launch_fwd as standalone launches. launch_prepare runs
+// the prepare kernel, which fills ``workspace`` from q, k, g and beta.
+// launch_recurrence runs the recurrence kernel, which reads that workspace
+// with v and beta and writes ``out`` and the states. Both must use the same
+// geometry (total_tiles, T_total, H, N, cu_seqlens).
 template <
     int D,
     bool IsVarlen = true,
